@@ -39,3 +39,4 @@
 /home/migdood/Documents/Dotnet Projects/expense-tracker/obj/Debug/net8.0/expense-tracker.pdb
 /home/migdood/Documents/Dotnet Projects/expense-tracker/obj/Debug/net8.0/expense-tracker.genruntimeconfig.cache
 /home/migdood/Documents/Dotnet Projects/expense-tracker/obj/Debug/net8.0/ref/expense-tracker.dll
+/home/migdood/Documents/Dotnet Projects/expense-tracker/obj/Debug/net8.0/expense-tracker.sourcelink.json

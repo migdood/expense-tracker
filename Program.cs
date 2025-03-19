@@ -1,16 +1,14 @@
-﻿using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
+﻿using System.Drawing;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Data.Sqlite;
 
 public class Program
 {
-  readonly static SqliteConnection con = new("Data Source=test.db");
+  readonly static SqliteConnection con = new("Data Source=expenses.db");
   public static void Main(string[] args)
   {
     #region Arg Handling
+
     if (args.Length <= 0)
     {
       Console.WriteLine("Usage: expense-tracker <command> [arguments]");
@@ -18,16 +16,17 @@ public class Program
     }
 
     using (var command = new SqliteCommand(@"
-      CREATE TABLE IF NOT EXISTS users(
+      CREATE TABLE IF NOT EXISTS expenses(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT, 
-      age INTEGER);
+      date DATE, 
+      description TEXT,
+      price INT);
       ", con))
     {
       con.Open();
       if (command.ExecuteNonQuery() > 0)
       {
-        Console.WriteLine("Created Database.");
+        Console.WriteLine("Database not found.\nCreated new one.\n\n");
       }
       con.Close();
     }
@@ -35,17 +34,16 @@ public class Program
     switch (args[0])
     {
       case "add":
-        if (args.Length != 3)
+        if (args.Length != 4)
         {
-          Console.WriteLine("Adding must include Name and Age.");
+          Console.WriteLine("Incorrect usage of 'add'\n\nUsage 'add <date> <description> <price>'\n\n");
           return;
         }
-        if (!int.TryParse(args[2], out int age))
+        if (!int.TryParse(args[3], out int price))
         {
-          Console.WriteLine("Age Must be an int.");
-          return;
+          Console.WriteLine("price needs to be an integer not\n\n");
         }
-        HandlerAdd(args[1], age);
+        HandlerAdd(args[1], args[2], price);
         break;
       case "list":
         HandlerList();
@@ -53,7 +51,7 @@ public class Program
       case "delete":
         if (!int.TryParse(args[1], out int id))
         {
-          Console.WriteLine("ID must be an int.");
+          Console.WriteLine("id must be an int.\n\n");
           return;
         }
         HandlerDelete(id);
@@ -64,15 +62,24 @@ public class Program
     }
     #endregion
   }
-  public static void HandlerAdd(string name, int age)
+  public static void HandlerAdd(string date, string description, int price)
   {
     try
     {
-
-      using (SqliteCommand cmd = new("INSERT INTO users(name, age) VALUES(@name, @age);", con))
+      if (!isDateValid(date))
       {
-        cmd.Parameters.AddWithValue("@name", name);
-        cmd.Parameters.AddWithValue("@age", age);
+        Console.WriteLine("please make sure the date you enter follows the format:\n<yyyy-MM-dd>\n\n");
+        return;
+      }
+      using (SqliteCommand cmd = new(@"INSERT INTO expenses(date, description, price) 
+                                        VALUES(
+                                        @date,
+                                        @description,
+                                        @price)", con))
+      {
+        cmd.Parameters.AddWithValue("@date", date);
+        cmd.Parameters.AddWithValue("@description", description);
+        cmd.Parameters.AddWithValue("@price", price);
         con.Open();
         cmd.ExecuteNonQuery();
         con.Close();
@@ -88,12 +95,14 @@ public class Program
   }
   public static void HandlerList()
   {
-    using (SqliteCommand cmd = new(@"SELECT * FROM users;", con))
+    // TODO: 
+    // format the strings to have a certain length to look like a table
+    using (SqliteCommand cmd = new(@"SELECT * FROM expenses;", con))
     {
       con.Open();
       var reader = cmd.ExecuteReader();
       while (reader.Read())
-        Console.WriteLine($"ID:{reader[0]}, Name:{reader[1]}, Age:{reader[2]}");
+        Console.WriteLine($"ID:{reader[0]} Date:{reader[1]} Description:{reader[2]} Price:{reader[3]}\n");
       con.Close();
     }
   }
@@ -101,7 +110,7 @@ public class Program
   {
     try
     {
-      using (SqliteCommand cmd = new("DELETE FROM users WHERE id=@id", con))
+      using (SqliteCommand cmd = new("DELETE FROM expenses WHERE id=@id", con))
       {
         cmd.Parameters.AddWithValue("@id", idNum);
         con.Open();
@@ -127,4 +136,20 @@ public class Program
       Console.WriteLine($"{e}");
     }
   }
+  public static bool isDateValid(string date)
+  {
+    string[] parts = date.Split('-');
+    if (parts.Length != 3) { return false; }
+    if (!(int.TryParse(parts[0], out int year) &&
+          int.TryParse(parts[1], out int month) &&
+          int.TryParse(parts[2], out int day)))
+    {
+      return false;
+    }
+
+    if (year < 1900 || month < 1 || month > 12 || day < 1 || day > 31) { return false; }
+
+    return true;
+  }
+
 }
