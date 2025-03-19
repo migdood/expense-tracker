@@ -1,6 +1,8 @@
 ﻿using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Data.Sqlite;
+using SQLitePCL;
 
 public class Program
 {
@@ -34,27 +36,45 @@ public class Program
     switch (args[0])
     {
       case "add":
-        if (args.Length != 4)
+        if (args.Length < 3)
         {
-          Console.WriteLine("Incorrect usage of 'add'\n\nUsage 'add <date> <description> <price>'\n\n");
+          Console.WriteLine("Incorrect usage of 'add'\n\nUsage: 'add <description> <price>'\n\n");
           return;
         }
-        if (!int.TryParse(args[3], out int price))
+
+        if (!int.TryParse(args[2], out int price))
         {
-          Console.WriteLine("price needs to be an integer not\n\n");
+          Console.WriteLine("price needs to be an integer\n\n");
         }
-        HandlerAdd(args[1], args[2], price);
+        HandlerAdd(args[1], price);
+        break;
+      case "update":
+        if (args.Length != 5)
+        {
+          Console.WriteLine($"Incorrect usage of 'update'\n\nUsage: 'update <id> <new date> <new description> <new price>'\n\nargs length:{args.Length}");
+          return;
+        }
+        if (!int.TryParse(args[1], out int id))
+        {
+          Console.WriteLine("id needs to be an integers");
+          return;
+        }
+        if (!int.TryParse(args[4], out int UpdatePrice))
+        {
+          Console.WriteLine("price needs to be an int");
+        }
+        HandlerUpdate(id, args[2], args[3], UpdatePrice);
         break;
       case "list":
         HandlerList();
         break;
       case "delete":
-        if (!int.TryParse(args[1], out int id))
+        if (!int.TryParse(args[1], out int DelID))
         {
           Console.WriteLine("id must be an int.\n\n");
           return;
         }
-        HandlerDelete(id);
+        HandlerDelete(DelID);
         break;
       default:
         Console.WriteLine($"{args[0]} is not a command. Type --help for command list.");
@@ -62,22 +82,22 @@ public class Program
     }
     #endregion
   }
-  public static void HandlerAdd(string date, string description, int price)
+  public static void HandlerAdd(string description, int price)
   {
     try
     {
-      if (!isDateValid(date))
-      {
-        Console.WriteLine("please make sure the date you enter follows the format:\n<yyyy-MM-dd>\n\n");
-        return;
-      }
+      // if (!isDateValid(date))
+      // {
+      //   Console.WriteLine("please make sure the date you enter follows the format:\n<yyyy-MM-dd>\n\n");
+      //   return;
+      // }
       using (SqliteCommand cmd = new(@"INSERT INTO expenses(date, description, price) 
                                         VALUES(
                                         @date,
                                         @description,
                                         @price)", con))
       {
-        cmd.Parameters.AddWithValue("@date", date);
+        cmd.Parameters.AddWithValue("@date", $"{DateTime.Today:yyyy-MM-dd}");
         cmd.Parameters.AddWithValue("@description", description);
         cmd.Parameters.AddWithValue("@price", price);
         con.Open();
@@ -93,21 +113,59 @@ public class Program
       Console.WriteLine($"{e}");
     }
   }
+  public static void HandlerUpdate(int id, string date, string description, int price)
+  {
+    if (!isDateValid(date))
+    {
+      Console.WriteLine("Please make sure the date is in the correct format:\n<yyyy-MM-dd>");
+    }
+    try
+    {
+      using (SqliteCommand cmd = new(@"UPDATE expenses SET 
+                                      date = @date,
+                                      description = @description,
+                                      price = @price;
+                                      WHERE id = @id", con))
+      {
+        cmd.Parameters.AddWithValue("@id", id);
+        cmd.Parameters.AddWithValue("@date", date);
+        cmd.Parameters.AddWithValue("@description", description);
+        cmd.Parameters.AddWithValue("@price", price);
+        con.Open();
+        cmd.ExecuteNonQuery();
+        con.Close();
+        Console.WriteLine("--------------------");
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine($"Updated ID:{id}");
+        Console.ResetColor();
+        Console.WriteLine("--------------------");
+        HandlerList();
+        con.Close();
+      }
+    }
+    catch (Exception e)
+    {
+      Console.WriteLine($"Error: {e}");
+    }
+  }
   public static void HandlerList()
   {
-    // TODO: 
-    // format the strings to have a certain length to look like a table
+    Console.ForegroundColor = ConsoleColor.DarkYellow;
+    Console.WriteLine($"# {StringChecker("ID")}{StringChecker("Date")}{StringChecker("Description")}{StringChecker("Price(egp)")}");
+    Console.ResetColor();
     using (SqliteCommand cmd = new(@"SELECT * FROM expenses;", con))
     {
       con.Open();
-      var reader = cmd.ExecuteReader();
+      SqliteDataReader reader = cmd.ExecuteReader();
       while (reader.Read())
-        Console.WriteLine($"ID:{reader[0]} Date:{reader[1]} Description:{reader[2]} Price:{reader[3]}\n");
+        Console.WriteLine($"# {StringChecker(reader[0].ToString() ?? string.Empty)}{StringChecker(reader[1].ToString() ?? string.Empty)}{StringChecker(reader[2].ToString() ?? string.Empty)}{StringChecker(reader[3].ToString() ?? string.Empty)}");
       con.Close();
     }
   }
   public static void HandlerDelete(int idNum)
   {
+    //TODO:
+    // Make the variable argument an array then delete everything per the id in the array
     try
     {
       using (SqliteCommand cmd = new("DELETE FROM expenses WHERE id=@id", con))
@@ -139,17 +197,32 @@ public class Program
   public static bool isDateValid(string date)
   {
     string[] parts = date.Split('-');
-    if (parts.Length != 3) { return false; }
+    if (parts.Length != 3) return false;
     if (!(int.TryParse(parts[0], out int year) &&
           int.TryParse(parts[1], out int month) &&
-          int.TryParse(parts[2], out int day)))
-    {
-      return false;
-    }
-
-    if (year < 1900 || month < 1 || month > 12 || day < 1 || day > 31) { return false; }
-
+          int.TryParse(parts[2], out int day))) return false;
+    if (year < 1900 || month < 1 || month > 12 || day < 1 || day > 31) return false;
     return true;
   }
-
+  public static string StringChecker(string str)
+  {
+    if (int.TryParse(str, out int num) || str == "ID" || str == "Price")
+    {
+      while (str.Length <= 5)
+      {
+        str += " ";
+      }
+      return str;
+    }
+    while (str.Length <= 14)
+    {
+      str += " ";
+    }
+    return str;
+  }
 }
+
+//TODO:
+// By default we will use today's date when adding
+// It's possible to update the data
+// And if the user inserts a custom date then we'll use it
