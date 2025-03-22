@@ -69,12 +69,17 @@ public class Program
         HandlerList();
         break;
       case "delete":
-        if (!int.TryParse(args[1], out int DelID))
+        List<int> ValidIDs = [];
+        for (int i = 1; i < args.Length; i++)
         {
-          Console.WriteLine("id must be an int.\n\n");
-          return;
+          if (!int.TryParse(args[i], out int DelID))
+          {
+            Console.WriteLine("id must be an int.\n\n");
+            return;
+          }
+          ValidIDs.Add(DelID);
         }
-        HandlerDelete(DelID);
+        HandlerDelete(ValidIDs);
         break;
       default:
         Console.WriteLine($"{args[0]} is not a command. Type --help for command list.");
@@ -124,8 +129,8 @@ public class Program
       using (SqliteCommand cmd = new(@"UPDATE expenses SET 
                                       date = @date,
                                       description = @description,
-                                      price = @price;
-                                      WHERE id = @id", con))
+                                      price = @price
+                                      WHERE id = @id;", con))
       {
         cmd.Parameters.AddWithValue("@id", id);
         cmd.Parameters.AddWithValue("@date", date);
@@ -162,28 +167,31 @@ public class Program
       con.Close();
     }
   }
-  public static void HandlerDelete(int idNum)
+  public static void HandlerDelete(List<int> IDList)
   {
-    //TODO:
-    // Make the variable argument an array then delete everything per the id in the array
     try
     {
-      using (SqliteCommand cmd = new("DELETE FROM expenses WHERE id=@id", con))
+      string StringOfIDs = $"{IDList[0]}";
+      for (int i = 1; i < IDList.Count; i++)
+        StringOfIDs += $", {IDList[i]}";
+      using (SqliteCommand cmd = new($"DELETE FROM expenses WHERE id IN ({StringOfIDs});", con))
       {
-        cmd.Parameters.AddWithValue("@id", idNum);
+        //TODO: Add parameterization
         con.Open();
         if (cmd.ExecuteNonQuery() == 0)
         {
-          Console.WriteLine($"There is no ID {idNum}");
+          con.Close();
+          Console.WriteLine($"Please Check the IDs and try again.\nExiting...");
           return;
         }
+
         Console.WriteLine("--------------------");
         Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"Deleted ID:{idNum}");
+        Console.Write($"Deleted ID: {StringOfIDs}");
+        Console.WriteLine();
         Console.ResetColor();
         Console.WriteLine("--------------------");
         HandlerList();
-        con.Close();
       }
     }
     catch (Exception e)
