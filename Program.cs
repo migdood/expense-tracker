@@ -66,7 +66,12 @@ public class Program
         HandlerUpdate(id, args[2], args[3], UpdatePrice);
         break;
       case "list":
-        HandlerList();
+        if (args.Length >= 2 && args.Length < 3)
+          HandlerList(args[1]);
+        else if (args.Length == 1)
+          HandlerList();
+        else
+          Console.WriteLine("Usage: list (optional)<date>");
         break;
       case "delete":
         List<int> ValidIDs = [];
@@ -156,14 +161,38 @@ public class Program
   public static void HandlerList()
   {
     Console.ForegroundColor = ConsoleColor.DarkYellow;
-    Console.WriteLine($"# {StringChecker("ID")}{StringChecker("Date")}{StringChecker("Description")}{StringChecker("Price(egp)")}");
+    Console.WriteLine($"# {StringSpacer("ID")}{StringSpacer("Date")}{StringSpacer("Description")}{StringSpacer("Price(egp)")}");
     Console.ResetColor();
-    using (SqliteCommand cmd = new(@"SELECT * FROM expenses;", con))
+    using (SqliteCommand cmd = new(@$"
+    SELECT * FROM expenses 
+    WHERE STRFTIME('%Y', date) = STRFTIME('%Y', '{DateTime.Today:yyyy-MM-dd}') 
+    AND STRFTIME('%m', date) = STRFTIME('%m', '{DateTime.Today:yyyy-MM-dd}') 
+    ORDER BY date ASC;", con))
     {
       con.Open();
       SqliteDataReader reader = cmd.ExecuteReader();
       while (reader.Read())
-        Console.WriteLine($"# {StringChecker(reader[0].ToString() ?? string.Empty)}{StringChecker(reader[1].ToString() ?? string.Empty)}{StringChecker(reader[2].ToString() ?? string.Empty)}{StringChecker(reader[3].ToString() ?? string.Empty)}");
+        Console.WriteLine($"# {StringSpacer(reader[0].ToString() ?? string.Empty)}{StringSpacer(reader[1].ToString() ?? string.Empty)}{StringSpacer(reader[2].ToString() ?? string.Empty)}{StringSpacer(reader[3].ToString() ?? string.Empty)}");
+      con.Close();
+    }
+  }
+  public static void HandlerList(string date)
+  {
+    Console.WriteLine($"Displaying Data from {date}");
+    Console.ForegroundColor = ConsoleColor.DarkYellow;
+    Console.WriteLine($"# {StringSpacer("ID")}{StringSpacer("Date")}{StringSpacer("Description")}{StringSpacer("Price(egp)")}");
+    Console.ResetColor();
+    using (SqliteCommand cmd = new(@$"
+    SELECT * FROM expenses 
+    WHERE STRFTIME('%Y', date) = STRFTIME('%Y', @date) 
+    AND STRFTIME('%m', date) = STRFTIME('%m', @date) 
+    ORDER BY date ASC;", con))
+    {
+      cmd.Parameters.AddWithValue("@date", date);
+      con.Open();
+      SqliteDataReader reader = cmd.ExecuteReader();
+      while (reader.Read())
+        Console.WriteLine($"# {StringSpacer(reader[0].ToString() ?? string.Empty)}{StringSpacer(reader[1].ToString() ?? string.Empty)}{StringSpacer(reader[2].ToString() ?? string.Empty)}{StringSpacer(reader[3].ToString() ?? string.Empty)}");
       con.Close();
     }
   }
@@ -212,7 +241,7 @@ public class Program
     if (year < 1900 || month < 1 || month > 12 || day < 1 || day > 31) return false;
     return true;
   }
-  public static string StringChecker(string str)
+  public static string StringSpacer(string str)
   {
     if (int.TryParse(str, out int num) || str == "ID" || str == "Price")
     {
