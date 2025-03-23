@@ -38,13 +38,29 @@ public class Program
       case "add":
         if (args.Length < 3)
         {
-          Console.WriteLine("Incorrect usage of 'add'\n\nUsage: 'add <description> <price>'\n\n");
+          Console.WriteLine("Incorrect usage of 'add'\n\nUsage: 'add (optional <date>) <description> <price>'\n\n");
           return;
         }
 
+        if (args.Length == 4)
+        {
+          if (!isDateValid(args[1]))
+          {
+            Console.WriteLine("date has to follow the format: <yyyy-MM-dd>");
+            return;
+          }
+          if (!int.TryParse(args[3], out int priceWithDate))
+          {
+            Console.WriteLine($"price needs to be an integer\n\n");
+            return;
+          }
+          HandlerAdd(args[1], args[2], priceWithDate);
+          break;
+        }
         if (!int.TryParse(args[2], out int price))
         {
           Console.WriteLine("price needs to be an integer\n\n");
+          return;
         }
         HandlerAdd(args[1], price);
         break;
@@ -96,11 +112,6 @@ public class Program
   {
     try
     {
-      // if (!isDateValid(date))
-      // {
-      //   Console.WriteLine("please make sure the date you enter follows the format:\n<yyyy-MM-dd>\n\n");
-      //   return;
-      // }
       using (SqliteCommand cmd = new(@"INSERT INTO expenses(date, description, price) 
                                         VALUES(
                                         @date,
@@ -108,6 +119,32 @@ public class Program
                                         @price)", con))
       {
         cmd.Parameters.AddWithValue("@date", $"{DateTime.Today:yyyy-MM-dd}");
+        cmd.Parameters.AddWithValue("@description", description);
+        cmd.Parameters.AddWithValue("@price", price);
+        con.Open();
+        cmd.ExecuteNonQuery();
+        con.Close();
+      }
+    }
+    catch (Exception e)
+    {
+      Console.ForegroundColor = ConsoleColor.Red;
+      Console.Write("Error:");
+      Console.ResetColor();
+      Console.WriteLine($"{e}");
+    }
+  }
+  public static void HandlerAdd(string date, string description, int price)
+  {
+    try
+    {
+      using (SqliteCommand cmd = new(@"INSERT INTO expenses(date, description, price) 
+                                        VALUES(
+                                        @date,
+                                        @description,
+                                        @price)", con))
+      {
+        cmd.Parameters.AddWithValue("@date", date);
         cmd.Parameters.AddWithValue("@description", description);
         cmd.Parameters.AddWithValue("@price", price);
         con.Open();
