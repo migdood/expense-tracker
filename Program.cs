@@ -82,9 +82,14 @@ public class Program
         HandlerUpdate(id, args[2], args[3], UpdatePrice);
         break;
       case "list":
-        if (args.Length == 2)
+        if (args.Length >= 2 && args.Length <= 3)
         {
-          if (args[1].ToLower() == "summary")
+          if (args.Length == 3 && args[1].ToLower() == "summary" && isDateValid(args[2]))
+          {
+            HandlerList(args[1].ToLower(), DateTime.Parse(args[2]));
+            break;
+          }
+          else if (args[1].ToLower() == "summary")
           {
             HandlerList("summary");
             break;
@@ -94,7 +99,10 @@ public class Program
             HandlerList(DateTime.Parse(args[1]));
             break;
           }
-          Console.WriteLine("Incorrect usage of list\n\nFor displaying lists by date, please ensure the date follows the format: <yyyy-MM-dd>\nFor displaying a summary please use the keyword 'summary'\n\nUsage: list <yyyy-MM-dd> || summary");
+          else
+          {
+            Console.WriteLine("Incorrect usage of list\n\nFor displaying lists by date, please ensure the date follows the format: <yyyy-MM-dd>\nFor displaying a summary please use the keyword 'summary'\n\nUsage: list <yyyy-MM-dd> || summary");
+          }
         }
         else if (args.Length == 1)
           HandlerList();
@@ -135,6 +143,13 @@ public class Program
         cmd.Parameters.AddWithValue("@price", price);
         con.Open();
         cmd.ExecuteNonQuery();
+        SqliteCommand cmd2 = new("SELECT MAX(id) FROM expenses;", con);
+        SqliteDataReader reader = cmd2.ExecuteReader();
+        reader.Read();
+        Console.ForegroundColor = ConsoleColor.DarkYellow;
+        Console.Write($"Added Successfully, ID: ");
+        Console.ResetColor();
+        Console.WriteLine($"{reader[0]}");
         con.Close();
       }
     }
@@ -161,6 +176,13 @@ public class Program
         cmd.Parameters.AddWithValue("@price", price);
         con.Open();
         cmd.ExecuteNonQuery();
+        SqliteCommand cmd2 = new("SELECT MAX(id) FROM expenses;", con);
+        SqliteDataReader reader = cmd2.ExecuteReader();
+        reader.Read();
+        Console.ForegroundColor = ConsoleColor.DarkYellow;
+        Console.Write($"Added Successfully, ID: ");
+        Console.ResetColor();
+        Console.WriteLine($"{reader[0]}");
         con.Close();
       }
     }
@@ -198,7 +220,6 @@ public class Program
         Console.WriteLine($"Updated ID:{id}");
         Console.ResetColor();
         Console.WriteLine("--------------------");
-        HandlerList();
         con.Close();
       }
     }
@@ -245,16 +266,17 @@ public class Program
       con.Close();
     }
   }
-  public static void HandlerList(string mode)
+  public static void HandlerList(string mode, DateTime? date = null)
   {
-    Console.WriteLine($"Displaying {mode} from {DateTime.Today:yyyy-MM}");
+    if (date.HasValue)
+      Console.WriteLine($"Displaying {mode} from {date?.ToString("yyyy-MM") ?? DateTime.Today.ToString("yyyy-MM")}");
 
     using (SqliteCommand cmd = new(@$"
     SELECT COUNT(id), SUM(price) FROM expenses 
     WHERE STRFTIME('%Y', date) = STRFTIME('%Y', @date) 
       AND STRFTIME('%m', date) = STRFTIME('%m', @date);", con))
     {
-      cmd.Parameters.AddWithValue("@date", DateTime.Today.ToString("yyyy-MM-dd"));
+      cmd.Parameters.AddWithValue("@date", date?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd"));
       con.Open();
       SqliteDataReader reader = cmd.ExecuteReader();
       while (reader.Read())
@@ -327,6 +349,7 @@ public class Program
 }
 
 //TODO:
+// 1. After finishing all the commands, write the help.
 // By default we will use today's date when adding
 // It's possible to update the data
 // And if the user inserts a custom date then we'll use it
