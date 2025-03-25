@@ -104,7 +104,7 @@ public partial class Program
   }
   public static void HandlerList(DateTime? date = null)
   {
-    Console.WriteLine($"Displaying Data from {date:yyyy-MM}");
+    Console.WriteLine($"Displaying Data from {date?.ToString("yyyy-MM") ?? DateTime.Today.ToString("yyyy-MM")}");
     Console.ForegroundColor = ConsoleColor.DarkYellow;
     Console.WriteLine(@$"# {StringSpacer("ID", 5)}{StringSpacer("Date", 14)}{StringSpacer("Description", 14)}{StringSpacer("Price(egp)", 5)}");
     Console.ResetColor();
@@ -189,5 +189,4 @@ public partial class Program
       Console.WriteLine($"{e}");
     }
   }
-
 }

@@ -1,5 +1,4 @@
-﻿using System.Dynamic;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 
 public partial class Program
 {
@@ -22,7 +21,7 @@ public partial class Program
       Console.WriteLine("Modify the expense");
       Console.Write(StringSpacer("list", 15));
       Console.WriteLine("Displays the details of the month's expenses");
-      Console.Write(StringSpacer("summary",15));
+      Console.Write(StringSpacer("summary", 15));
       Console.WriteLine("Displays a summary of the month");
       Console.Write(StringSpacer("delete", 15));
       Console.WriteLine("Removes the expense");
@@ -96,7 +95,7 @@ public partial class Program
         HandlerUpdate(id, Args[1], Args[2], UpdatePrice);
         break;
       case "list":
-        if (Args.Count >= 1 && Args.Count <= 2)
+        if (Args.Count == 1)
         {
           if (isDateValid(Args[0]))
           {
@@ -177,7 +176,8 @@ public partial class Program
 
 //TODO:
 // 1. After finishing all the command, write the help.
-// 2. If a month is empty then return a text saying it's empty instead of not having anythings
+// 2. If a month is empty then return a text saying it's empty instead of not having anything
+// 3. If it's list or summary then remove the days for the user to input
 // By default we will use today's date when adding
 // It's possible to update the data
 // And if the user inserts a custom date then we'll use it
