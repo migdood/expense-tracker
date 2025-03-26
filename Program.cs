@@ -178,6 +178,8 @@ public partial class Program
 // 1. After finishing all the command, write the help.
 // 2. If a month is empty then return a text saying it's empty instead of not having anything
 // 3. If it's list or summary then remove the days for the user to input
+// 4. Add a way to change the currency
+// 5. If a price is negative in the "Add" / "Update", make sure to display an error
 // By default we will use today's date when adding
 // It's possible to update the data
 // And if the user inserts a custom date then we'll use it
