@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using System.Diagnostics;
+using Microsoft.Data.Sqlite;
 
 public partial class Program
 {
@@ -9,22 +10,22 @@ public partial class Program
     string Version = "0.6.0";
     #region Arg Handling
 
-    if (command.Length <= 0)
+    if (command.Length <= 0 || command[0] == "help" || command[0] == "h")
     {
       Console.Write(StringSpacer($"Expense-Tracker {Version}", 35));
       Console.WriteLine("Written by Almigdad Bolad\n");
       Console.WriteLine("Usage: expense-tracker <command> <arguments N>\n");
       Console.WriteLine("<command>");
       Console.Write(StringSpacer("add", 15));
-      Console.WriteLine("adds an expense to the DB");
+      Console.WriteLine("Adds an expense to the DB");
       Console.Write(StringSpacer("update", 15));
       Console.WriteLine("Modify the expense");
+      Console.Write(StringSpacer("delete", 15));
+      Console.WriteLine("Removes the expense");
       Console.Write(StringSpacer("list", 15));
       Console.WriteLine("Displays the details of the month's expenses");
       Console.Write(StringSpacer("summary", 15));
       Console.WriteLine("Displays a summary of the month");
-      Console.Write(StringSpacer("delete", 15));
-      Console.WriteLine("Removes the expense");
       Console.WriteLine();
       return;
     }
@@ -49,10 +50,19 @@ public partial class Program
     switch (command[0])
     {
       case "add":
-        if (Args.Count < 2)
+        if (Args.Count < 2 || Args.Count > 3)
         {
-          Console.WriteLine("Incorrect usage of 'add'\n\nUsage: 'add (optional <date>) <description> <price>'\n\n");
-          return;
+          if (Args.Count < 1 || (Args[0] != "h" && Args[0] != "help"))
+            Console.WriteLine($"Incorrect usage of 'add'\n");
+          Console.WriteLine("Usage: 'add (optional <date>) <description> <price>'\n");
+          Console.WriteLine("<Parameters>");
+          Console.Write(StringSpacer("<date>", 15));
+          Console.WriteLine("Optional, default value is current date, ensure correct format <yyyy-MM-dd>");
+          Console.Write(StringSpacer("<description>", 15));
+          Console.WriteLine("The name of the expense / bill");
+          Console.Write(StringSpacer("<price>", 15));
+          Console.WriteLine("The price of the expense in the selected currency");
+          break; ;
         }
         if (Args.Count == 3)
         {
@@ -61,23 +71,23 @@ public partial class Program
             Console.WriteLine("date has to follow the format: <yyyy-MM-dd>");
             return;
           }
-          if (!int.TryParse(Args[2], out int priceWithDate))
+          if (!int.TryParse(Args[2], out int priceWithDate) || priceWithDate < 0)
           {
-            Console.WriteLine($"price needs to be an integer\n\n");
+            Console.WriteLine($"price needs to be an integer and greater than zero\n");
             return;
           }
           HandlerAdd(Args[0], Args[1], priceWithDate);
           break;
         }
-        if (!int.TryParse(Args[1], out int price))
+        if (!int.TryParse(Args[1], out int price) || price < 0)
         {
-          Console.WriteLine("price needs to be an integer\n\n");
+          Console.WriteLine("price needs to be an integer and greater than zero\n");
           return;
         }
         HandlerAdd(Args[0], price);
         break;
       case "update":
-        if (Args.Count != 4)
+        if (Args.Count != 4 || (Args[0] != "h" && Args[0] != "help"))
         {
           Console.WriteLine($"Incorrect usage of 'update'\n\nUsage: 'update <id> <new date> <new description> <new price>'\n\n");
           break;
@@ -87,69 +97,76 @@ public partial class Program
           Console.WriteLine("id needs to be an integers");
           break;
         }
-        if (!int.TryParse(Args[3], out int UpdatePrice))
+        if (!int.TryParse(Args[3], out int UpdatePrice) && UpdatePrice >= 0)
         {
-          Console.WriteLine("price needs to be an int");
+          Console.WriteLine("price needs to be an integer and greater than zero");
           break;
         }
         HandlerUpdate(id, Args[1], Args[2], UpdatePrice);
         break;
       case "list":
-        if (Args.Count == 1)
+        if (Args.Count == 1 && isDateValid(Args[0]))
         {
-          if (isDateValid(Args[0]))
-          {
-            HandlerList(DateTime.Parse(Args[0]));
-            break;
-          }
-          else
-          {
-            Console.WriteLine("Incorrect usage of command\n");
-            Console.WriteLine("Usage: expense-tracker list <parameter>\n");
-            Console.WriteLine("<Parameters>");
-            Console.Write(StringSpacer("<date>", 15));
-            Console.WriteLine("Displays expenses of the month in <date>, ensure correct format <yyyy-MM-dd>");
-            Console.Write(StringSpacer("summary", 15));
-            Console.WriteLine("Displays summary of the current month\n");
-          }
+          HandlerList(DateTime.Parse(Args[0]));
+          break;
         }
         else if (Args.Count == 0)
           HandlerList();
         else
+        {
+          if (Args.Count < 0 || (Args[0] != "h" && Args[0] != "help"))
+            Console.WriteLine("Incorrect usage of command\n");
+          Console.WriteLine("Usage: expense-tracker list <parameter>\n");
+          Console.WriteLine("<Parameters>");
+          Console.Write(StringSpacer("<date>", 15));
+          Console.WriteLine("Displays expenses of the month in <date>, ensure correct format <yyyy-MM-dd>");
           Console.WriteLine("Usage: list (optional <date>)");
+        }
         break;
       case "summary":
-        if (Args.Count == 1)
+        if (Args.Count == 1 && isDateValid(Args[0]))
         {
-          if (!isDateValid(Args[0]))
-          {
+          HandlerSummary(DateTime.Parse(Args[0]));
+        }
+        else if (Args.Count >= 1)
+        {
+          if (Args[0] != "h" && Args[0] != "help" && !isDateValid(Args[0]))
             Console.WriteLine("Incorrect usage of command\n");
-            Console.WriteLine("Usage: expense-tracker summary (optional <parameter>)\n");
-            Console.WriteLine("<Parameters>");
-            Console.Write(StringSpacer("<date>", 15));
-            Console.WriteLine("Displays expenses of the month in <date>, ensure correct format <yyyy-MM-dd>");
-          }
-          else
-            HandlerSummary(DateTime.Parse(Args[0]));
+          Console.WriteLine("Usage: expense-tracker summary (optional <parameter>)\n");
+          Console.WriteLine("<Parameters>");
+          Console.Write(StringSpacer("<date>", 15));
+          Console.WriteLine("Displays expenses of the month in <date>, ensure correct format <yyyy-MM-dd>");
+          break;
         }
         else
           HandlerSummary();
         break;
       case "delete":
-        List<int> ValidIDs = [];
-        for (int i = 1; i < Args.Count; i++)
+        if (Args.Count <= 0 || Args[0] == "h" || Args[0] == "help")
         {
-          if (!int.TryParse(Args[i], out int DelID))
-          {
-            Console.WriteLine("id must be an int.\n\n");
-            return;
-          }
-          ValidIDs.Add(DelID);
+          Console.WriteLine("Usage: expense-tracker delete <parameter>\n");
+          Console.WriteLine("<Parameters>");
+          Console.Write(StringSpacer("<id>", 15));
+          Console.WriteLine("Allows inserting multiple IDs, separated by space, to be deleted");
+          break;
         }
-        HandlerDelete(ValidIDs);
+        List<int> ValidIDs = [];
+        if (Args.Count >= 1)
+          for (int i = 0; i < Args.Count; i++)
+          {
+            if (!int.TryParse(Args[i], out int DelID))
+            {
+              Console.WriteLine("id must be an int.\n");
+              return;
+            }
+            ValidIDs.Add(DelID);
+            Console.WriteLine($"{DelID} Was Added To List.");
+          }
+        if (ValidIDs.Count >= 1)
+          HandlerDelete(ValidIDs);
         break;
       default:
-        Console.WriteLine($"{Args[0]} is not a command. Type --help for command list.");
+        Console.WriteLine($"{Args[0]} is not a command. Type h or help for command list.");
         break;
     }
     #endregion
