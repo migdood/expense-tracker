@@ -52,7 +52,7 @@ public partial class Program
       case "add":
         if (Args.Count < 2 || Args.Count > 3)
         {
-          if (Args.Count < 1 || (Args[0] != "h" && Args[0] != "help"))
+          if (Args.Count < 1 || (Args[0].ToLower() != "h" && Args[0].ToLower() != "help"))
             Console.WriteLine($"Incorrect usage of 'add'\n");
           Console.WriteLine("Usage: 'add (optional <date>) <description> <price>'\n");
           Console.WriteLine("<Parameters>");
@@ -66,7 +66,7 @@ public partial class Program
         }
         if (Args.Count == 3)
         {
-          if (!isDateValid(Args[0]))
+          if (!isDateValid(Args[0].ToLower()))
           {
             Console.WriteLine("date has to follow the format: <yyyy-MM-dd>");
             return;
@@ -76,7 +76,7 @@ public partial class Program
             Console.WriteLine($"price needs to be an integer and greater than zero\n");
             return;
           }
-          HandlerAdd(Args[0], Args[1], priceWithDate);
+          HandlerAdd(Args[0].ToLower(), Args[1], priceWithDate);
           break;
         }
         if (!int.TryParse(Args[1], out int price) || price < 0)
@@ -84,15 +84,15 @@ public partial class Program
           Console.WriteLine("price needs to be an integer and greater than zero\n");
           return;
         }
-        HandlerAdd(Args[0], price);
+        HandlerAdd(Args[0].ToLower(), price);
         break;
       case "update":
-        if (Args.Count != 4 || (Args[0] != "h" && Args[0] != "help"))
+        if (Args.Count != 4 || (Args[0].ToLower() != "h" && Args[0].ToLower() != "help"))
         {
           Console.WriteLine($"Incorrect usage of 'update'\n\nUsage: 'update <id> <new date> <new description> <new price>'\n\n");
           break;
         }
-        if (!int.TryParse(Args[0], out int id))
+        if (!int.TryParse(Args[0].ToLower(), out int id))
         {
           Console.WriteLine("id needs to be an integers");
           break;
@@ -105,16 +105,16 @@ public partial class Program
         HandlerUpdate(id, Args[1], Args[2], UpdatePrice);
         break;
       case "list":
-        if (Args.Count == 1 && isDateValid(Args[0]))
+        if (Args.Count == 1 && isDateValid(Args[0].ToLower(), true))
         {
-          HandlerList(DateTime.Parse(Args[0]));
+          HandlerList(DateTime.Parse(Args[0].ToLower()));
           break;
         }
         else if (Args.Count == 0)
           HandlerList();
         else
         {
-          if (Args.Count < 0 || (Args[0] != "h" && Args[0] != "help"))
+          if (Args.Count < 0 || (Args[0].ToLower() != "h" && Args[0].ToLower() != "help"))
             Console.WriteLine("Incorrect usage of command\n");
           Console.WriteLine("Usage: expense-tracker list <parameter>\n");
           Console.WriteLine("<Parameters>");
@@ -124,13 +124,13 @@ public partial class Program
         }
         break;
       case "summary":
-        if (Args.Count == 1 && isDateValid(Args[0]))
+        if (Args.Count == 1 && isDateValid(Args[0].ToLower(), true))
         {
-          HandlerSummary(DateTime.Parse(Args[0]));
+          HandlerSummary(DateTime.Parse(Args[0].ToLower()));
         }
         else if (Args.Count >= 1)
         {
-          if (Args[0] != "h" && Args[0] != "help" && !isDateValid(Args[0]))
+          if (Args[0].ToLower() != "h" && Args[0].ToLower() != "help" && !isDateValid(Args[0].ToLower()))
             Console.WriteLine("Incorrect usage of command\n");
           Console.WriteLine("Usage: expense-tracker summary (optional <parameter>)\n");
           Console.WriteLine("<Parameters>");
@@ -142,7 +142,7 @@ public partial class Program
           HandlerSummary();
         break;
       case "delete":
-        if (Args.Count <= 0 || Args[0] == "h" || Args[0] == "help")
+        if (Args.Count <= 0 || Args[0].ToLower() == "h" || Args[0].ToLower() == "help")
         {
           Console.WriteLine("Usage: expense-tracker delete <parameter>\n");
           Console.WriteLine("<Parameters>");
@@ -166,19 +166,26 @@ public partial class Program
           HandlerDelete(ValidIDs);
         break;
       default:
-        Console.WriteLine($"{Args[0]} is not a command. Type h or help for command list.");
+        Console.WriteLine($"{Args[0].ToLower()} is not a command. Type h or help for command list.");
         break;
     }
     #endregion
   }
-  public static bool isDateValid(string date)
+  public static bool isDateValid(string date, bool YearAndMonth = false)
   {
     string[] parts = date.Split('-');
+    if (parts.Length == 2 && YearAndMonth == true)
+    {
+      if (!(int.TryParse(parts[0], out int year1) &&
+          int.TryParse(parts[1], out int month1))) return false;
+      if (year1 < 1900 || year1 > int.Parse(DateTime.Today.ToString("yyyy")) || month1 < 1 || month1 > 12) return false;
+      return true;
+    }
     if (parts.Length != 3) return false;
     if (!(int.TryParse(parts[0], out int year) &&
           int.TryParse(parts[1], out int month) &&
           int.TryParse(parts[2], out int day))) return false;
-    if (year < 1900 || month < 1 || month > 12 || day < 1 || day > 31) return false;
+    if (year < 1900 || year > int.Parse(DateTime.Today.ToString("yyyy")) || month < 1 || month > 12 || day < 1 || day > 31) return false;
     return true;
   }
   public static string StringSpacer(string str, int spaces)
@@ -192,11 +199,8 @@ public partial class Program
 }
 
 //TODO:
-// 1. After finishing all the command, write the help.
-// 2. If a month is empty then return a text saying it's empty instead of not having anything
-// 3. If it's list or summary then remove the days for the user to input
-// 4. Add a way to change the currency
-// 5. If a price is negative in the "Add" / "Update", make sure to display an error
-// By default we will use today's date when adding
-// It's possible to update the data
-// And if the user inserts a custom date then we'll use it
+// [-] 1. After finishing all the command, write the help.
+// [-] 2. If a month is empty then return a text saying it's empty instead of not having anything
+// [-] 3. If it's list or summary then remove the days for the user to input
+// [] 4. Add a way to change the currency
+// [-] 5. If a price is negative in the "Add" / "Update", make sure to display an error

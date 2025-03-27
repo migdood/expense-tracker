@@ -7,14 +7,14 @@ $ expense-tracker add 2025-03-01 Dinner 10
 # Added Successfully, ID: 2
 
 $ expense-tracker list
-# ID  Date       Description  Price(egp)
+# ID  Date       Description  Price(currency)
 # 1   2025-03-06  Lunch        20 
 # 2   2025-03-07  Dinner       10
 
 $ expense-tracker summary
 # Displaying summary for 2025-03
 # Total Bills:         11
-# Total Amount Paid:   3423 EGP
+# Total Amount Paid:   3423 currency
 
 $ expense-tracker delete 2
 # Expense deleted successfully

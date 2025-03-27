@@ -104,27 +104,43 @@ public partial class Program
   }
   public static void HandlerList(DateTime? date = null)
   {
-    Console.WriteLine($"Displaying Data from {date?.ToString("yyyy-MM") ?? DateTime.Today.ToString("yyyy-MM")}");
-    Console.ForegroundColor = ConsoleColor.DarkYellow;
-    Console.WriteLine(@$"# {StringSpacer("ID", 5)}{StringSpacer("Date", 14)}{StringSpacer("Description", 14)}{StringSpacer("Price(egp)", 5)}");
-    Console.ResetColor();
-    using (SqliteCommand cmd = new(@$"
+    try
+    {
+      using (SqliteCommand cmd = new(@$"
     SELECT * FROM expenses 
     WHERE STRFTIME('%Y', date) = STRFTIME('%Y', @date) 
     AND STRFTIME('%m', date) = STRFTIME('%m', @date) 
     ORDER BY date ASC;", con))
+      {
+        cmd.Parameters.AddWithValue("@date", date?.ToString("yyyy-MM-01") ?? DateTime.Today.ToString("yyyy-MM-dd"));
+
+        con.Open();
+
+        SqliteDataReader reader = cmd.ExecuteReader();
+        if (!reader.HasRows)
+        {
+          Console.WriteLine("This month doesn't have any expenses, yet.");
+          return;
+        }
+
+        Console.WriteLine($"Displaying Data from {date?.ToString("yyyy-MM") ?? DateTime.Today.ToString("yyyy-MM")}");
+        Console.ForegroundColor = ConsoleColor.DarkYellow;
+        Console.WriteLine(@$"# {StringSpacer("ID", 5)}{StringSpacer("Date", 14)}{StringSpacer("Description", 14)}{StringSpacer("Price(egp)", 5)}");
+        Console.ResetColor();
+
+        while (reader.Read())
+          Console.WriteLine(@$"# {StringSpacer(reader[0].ToString() ?? string.Empty, 5)}{StringSpacer(reader[1].ToString() ?? string.Empty, 14)}{StringSpacer(reader[2].ToString() ?? string.Empty, 14)}{StringSpacer(reader[3].ToString() ?? string.Empty, 5)}");
+
+        con.Close();
+      }
+    }
+    catch (Exception e)
     {
-      cmd.Parameters.AddWithValue("@date", date?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd"));
-      con.Open();
-      SqliteDataReader reader = cmd.ExecuteReader();
-      while (reader.Read())
-        Console.WriteLine(@$"# {StringSpacer(reader[0].ToString() ?? string.Empty, 5)}{StringSpacer(reader[1].ToString() ?? string.Empty, 14)}{StringSpacer(reader[2].ToString() ?? string.Empty, 14)}{StringSpacer(reader[3].ToString() ?? string.Empty, 5)}");
-      con.Close();
+      Console.WriteLine(e.ToString());
     }
   }
   public static void HandlerSummary(DateTime? date = null)
   {
-    Console.WriteLine($"Displaying summary for {date?.ToString("yyyy-MM") ?? DateTime.Today.ToString("yyyy-MM")}");
     try
     {
       using (SqliteCommand cmd = new(@$"
@@ -132,26 +148,40 @@ public partial class Program
     WHERE STRFTIME('%Y', date) = STRFTIME('%Y', @date) 
       AND STRFTIME('%m', date) = STRFTIME('%m', @date);", con))
       {
-        cmd.Parameters.AddWithValue("@date", date?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd"));
+        cmd.Parameters.AddWithValue("@date", date?.ToString("yyyy-MM-01") ?? DateTime.Today.ToString("yyyy-MM-dd"));
+
         con.Open();
+
         SqliteDataReader reader = cmd.ExecuteReader();
-        while (reader.Read())
+
+        if (reader.Read())
         {
+          int.TryParse(reader[0]?.ToString() ?? "0", out int TotalBills);
+          int.TryParse(reader[1]?.ToString(), out int TotalPrice);
+
+          if (TotalBills == 0)
+          {
+            Console.WriteLine("This month doesn't have any expenses, yet.");
+            return;
+          }
+          Console.WriteLine($"Displaying summary for {date?.ToString("yyyy-MM") ?? DateTime.Today.ToString("yyyy-MM")}");
+
           Console.ForegroundColor = ConsoleColor.DarkYellow;
           Console.Write(StringSpacer("Total Bills: ", 20));
           Console.ResetColor();
-          Console.WriteLine($"{reader[0].ToString() ?? string.Empty}");
+          Console.WriteLine($"{TotalBills}");
           Console.ForegroundColor = ConsoleColor.DarkYellow;
           Console.Write(StringSpacer("Total Amount Paid: ", 20));
           Console.ResetColor();
-          Console.WriteLine($"{reader[1].ToString() ?? string.Empty} EGP");
+          Console.WriteLine($"{TotalPrice}");
         }
+
         con.Close();
       }
     }
     catch (Exception ex)
     {
-      Console.WriteLine(ex.ToString());
+      Console.WriteLine("Error: " + ex.ToString());
     }
   }
   public static void HandlerDelete(List<int> IDList)
