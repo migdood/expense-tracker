@@ -7,7 +7,7 @@ public partial class Program
   public static List<string> Args = [];
   public static void Main(string[] command)
   {
-    string Version = "1.0.0";
+    string Version = "1.1.0";
     #region Arg Handling
 
     if (command.Length <= 0 || command[0] == "help" || command[0] == "h")
