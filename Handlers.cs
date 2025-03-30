@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Microsoft.Data.Sqlite;
 
 public partial class Program
@@ -15,24 +16,26 @@ public partial class Program
         cmd.Parameters.AddWithValue("@date", $"{DateTime.Today:yyyy-MM-dd}");
         cmd.Parameters.AddWithValue("@description", description);
         cmd.Parameters.AddWithValue("@price", price);
+
         con.Open();
+
         cmd.ExecuteNonQuery();
         SqliteCommand cmd2 = new("SELECT MAX(id) FROM expenses;", con);
         SqliteDataReader reader = cmd2.ExecuteReader();
+
         reader.Read();
+
         Console.ForegroundColor = ConsoleColor.DarkYellow;
         Console.Write($"Added Successfully, ID: ");
         Console.ResetColor();
         Console.WriteLine($"{reader[0]}");
+
         con.Close();
       }
     }
-    catch (Exception e)
+    catch
     {
-      Console.ForegroundColor = ConsoleColor.Red;
-      Console.Write("Error:");
-      Console.ResetColor();
-      Console.WriteLine($"{e}");
+      throw;
     }
   }
   public static void HandlerAdd(string date, string description, int price)
@@ -48,24 +51,26 @@ public partial class Program
         cmd.Parameters.AddWithValue("@date", date);
         cmd.Parameters.AddWithValue("@description", description);
         cmd.Parameters.AddWithValue("@price", price);
+
         con.Open();
+
         cmd.ExecuteNonQuery();
         SqliteCommand cmd2 = new("SELECT MAX(id) FROM expenses;", con);
         SqliteDataReader reader = cmd2.ExecuteReader();
+        
         reader.Read();
+
         Console.ForegroundColor = ConsoleColor.DarkYellow;
         Console.Write($"Added Successfully, ID: ");
         Console.ResetColor();
         Console.WriteLine($"{reader[0]}");
+
         con.Close();
       }
     }
-    catch (Exception e)
+    catch
     {
-      Console.ForegroundColor = ConsoleColor.Red;
-      Console.Write("Error:");
-      Console.ResetColor();
-      Console.WriteLine($"{e}");
+      throw;
     }
   }
   public static void HandlerUpdate(int id, string date, string description, int price)
@@ -97,9 +102,9 @@ public partial class Program
         con.Close();
       }
     }
-    catch (Exception e)
+    catch
     {
-      Console.WriteLine($"Error: {e}");
+      throw;
     }
   }
   public static void HandlerList(DateTime? date = null)
@@ -134,9 +139,9 @@ public partial class Program
         con.Close();
       }
     }
-    catch (Exception e)
+    catch
     {
-      Console.WriteLine(e.ToString());
+      throw;
     }
   }
   public static void HandlerSummary(DateTime? date = null)
@@ -179,44 +184,41 @@ public partial class Program
         con.Close();
       }
     }
-    catch (Exception ex)
+    catch
     {
-      Console.WriteLine("Error: " + ex.ToString());
+      throw;
     }
   }
   public static void HandlerDelete(List<int> IDList)
   {
     try
     {
-      string StringOfIDs = $"{IDList[0]}";
-      for (int i = 1; i < IDList.Count; i++)
-        StringOfIDs += $", {IDList[i]}";
-      using (SqliteCommand cmd = new($"DELETE FROM expenses WHERE id IN ({StringOfIDs});", con))
-      {
-        //TODO: Add parameterization
-        con.Open();
-        if (cmd.ExecuteNonQuery() == 0)
-        {
-          con.Close();
-          Console.WriteLine($"Please Check the IDs and try again.\nExiting...");
-          return;
-        }
+      string[] parameters = [.. IDList.Select((id, index) => $"@id{index}")];
+      string StringOfParameterizedIDs = string.Join(", ", parameters);
+      using SqliteCommand cmd = new($"DELETE FROM expenses WHERE id IN ({StringOfParameterizedIDs});", con);
 
-        Console.WriteLine("--------------------");
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.Write($"Deleted ID: {StringOfIDs}");
-        Console.WriteLine();
-        Console.ResetColor();
-        Console.WriteLine("--------------------");
-        HandlerList();
+      for (int i = 0; i < IDList.Count; i++)
+        cmd.Parameters.AddWithValue(parameters[i], IDList[i]);
+
+      con.Open();
+      if (cmd.ExecuteNonQuery() == 0)
+      {
+        con.Close();
+        Console.WriteLine($"Please Check the IDs and try again.\nExiting...");
+        return;
       }
-    }
-    catch (Exception e)
-    {
-      Console.ForegroundColor = ConsoleColor.Red;
-      Console.Write("Error:");
+
+      Console.WriteLine("--------------------");
+      Console.ForegroundColor = ConsoleColor.Green;
+      Console.Write($"Deleted ID: {string.Join(", ", IDList)}");
+      Console.WriteLine();
       Console.ResetColor();
-      Console.WriteLine($"{e}");
+      Console.WriteLine("--------------------");
+      HandlerList();
+    }
+    catch
+    {
+      throw;
     }
   }
 }
