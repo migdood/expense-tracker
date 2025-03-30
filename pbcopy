@@ -3,8 +3,7 @@ using Microsoft.Data.Sqlite;
 
 public partial class Program
 {
-  static readonly string databasePath = Path.Combine(AppContext.BaseDirectory, "expenses.db");
-  static readonly SqliteConnection con = new($"Data Source={databasePath}");
+  readonly static SqliteConnection con = new("Data Source=expenses.db");
   public static List<string> Args = [];
   public static void Main(string[] command)
   {
