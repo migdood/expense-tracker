@@ -7,7 +7,7 @@ public partial class Program
   public static List<string> Args = [];
   public static void Main(string[] command)
   {
-    string Version = "0.6.0";
+    string Version = "1.0.0";
     #region Arg Handling
 
     if (command.Length <= 0 || command[0] == "help" || command[0] == "h")
@@ -199,8 +199,4 @@ public partial class Program
 }
 
 //TODO:
-// [-] 1. After finishing all the command, write the help.
-// [-] 2. If a month is empty then return a text saying it's empty instead of not having anything
-// [-] 3. If it's list or summary then remove the days for the user to input
 // [] 4. Add a way to change the currency
-// [-] 5. If a price is negative in the "Add" / "Update", make sure to display an error
